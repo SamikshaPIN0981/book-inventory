@@ -313,6 +313,8 @@
 
 import React, { useState, useEffect } from "react";
 import { jwtDecode } from 'jwt-decode';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Box,
   Button,
@@ -340,6 +342,7 @@ const GenreSection = () => {
   const [newGenre, setNewGenre] = useState({
     genreId: "",
     genreName: "",
+    description: "",
   });
   const [editingGenre, setEditingGenre] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -396,23 +399,27 @@ const GenreSection = () => {
 
   const handleToggleForm = () => {
     setShowAddForm(!showAddForm);
-    setNewGenre({ genreId: "", genreName: "" });
+    setNewGenre({ genreId: "", genreName: "" , description: ""});
     setEditingGenre(null);
   };
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewGenre({ ...newGenre, [name]: value });
+    setNewGenre({ ...newGenre, [name]: value.trim() });
   };
 
   const handleSaveGenre = async () => {
-    if (!newGenre.genreName || !newGenre.genreName.trim()) {
-      alert("Please provide a genre name!");
+    const trimmedName = newGenre.genreName.trim(); // Trim spaces from input
+    
+    if (!trimmedName) {
+      toast.warning("Genre name cannot be empty or just spaces!", { position: "top-right" });
       return;
     }
+  
     try {
       let response;
       if (editingGenre) {
+        // If editing an existing genre
         response = await fetch(
           `http://localhost:8080/api/genres/${editingGenre.genreId}`,
           {
@@ -421,29 +428,43 @@ const GenreSection = () => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(newGenre),
+            body: JSON.stringify({ ...newGenre, genreName: trimmedName }), // Use trimmed name
           }
         );
+        
+        if (response.ok) {
+          toast.success("Genre updated successfully!", { position: "top-right" }); // Success message for update
+        }
+  
       } else {
+        // If adding a new genre
         response = await fetch("http://localhost:8080/api/genres", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(newGenre),
+          body: JSON.stringify({ ...newGenre, genreName: trimmedName }), // Use trimmed name
         });
+  
+        if (response.ok) {
+          toast.success("Genre added successfully!", { position: "top-right" }); // Success message for new genre
+        }
       }
-
+  
       if (response.ok) {
         fetchGenres();
         setShowAddForm(false);
-        setNewGenre({ genreId: "", genreName: "" });
+        setNewGenre({ genreId: "", genreName: "", description: "" });
         setEditingGenre(null);
+      } else if (response.status === 409) { // Duplicate genre
+        const errorMessage = await response.text();
+        toast.error(errorMessage, { position: "top-right" });
       } else {
-        console.error("Failed to save genre");
+        toast.error("Failed to save genre", { position: "top-right" });
       }
     } catch (error) {
+      toast.error("Error saving genre!", { position: "top-right" });
       console.error("Error saving genre:", error);
     }
   };
@@ -487,6 +508,7 @@ const GenreSection = () => {
     setNewGenre({
       genreId: genre.genreId,
       genreName: genre.genreName,
+      description: genre.description,
     });
     setShowAddForm(true);
   };
@@ -530,12 +552,15 @@ const GenreSection = () => {
 
       if (response.ok) {
         fetchGenres();
-        alert("Bulk upload successful!");
+        // alert("Bulk upload successful!");
+        toast.success("CSV file uploaded successfully!", { position: "top-right" });
       } else {
-        console.error("Failed to upload CSV.");
+        // console.error("Failed to upload CSV.");
+        toast.error("Failed to upload CSV.", { position: "top-right" });
       }
     } catch (error) {
-      console.error("Error uploading CSV:", error);
+      //console.error("Error uploading CSV:", error);
+      toast.error("Error uploading CSV:", { position: "top-right" });
     }
   };
 
@@ -666,6 +691,13 @@ const GenreSection = () => {
                 backgroundColor: "#FFFFFF",
               }}
             />
+             <TextField
+              label="Description"
+              name="description"
+              value={newGenre.description}
+              onChange={handleInputChange}
+              fullWidth
+            />
             <Button
               variant="contained"
               onClick={handleSaveGenre}
@@ -694,6 +726,7 @@ const GenreSection = () => {
               <TableRow sx={{ background: 'linear-gradient(to right, #FF7E5F, #feb47b)' }}> 
                 <TableCell align="center" sx={{ color: "#140202", fontWeight: "bold" }}>Genre ID</TableCell>
                 <TableCell align="center" sx={{ color: "#140202", fontWeight: "bold" }}>Genre Name</TableCell>
+                <TableCell align="center" sx={{ color: "#140202", fontWeight: "bold" }}>Description</TableCell>
                 <TableCell align="center" sx={{ color: "#140202", fontWeight: "bold" }}>Created At</TableCell>
                 <TableCell align="center" sx={{ color: "#140202", fontWeight: "bold" }}>Actions</TableCell>
               </TableRow>
@@ -703,6 +736,7 @@ const GenreSection = () => {
                 <TableRow key={genre.genreId}>
                   <TableCell align="center">{genre.genreId}</TableCell>
                   <TableCell align="center">{genre.genreName}</TableCell>
+                  <TableCell align="center">{genre.description}</TableCell>
                   <TableCell align="center">{new Date(genre.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell align="center">
                     <Button

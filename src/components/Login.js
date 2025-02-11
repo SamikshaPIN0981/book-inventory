@@ -592,12 +592,12 @@ const Login = () => {
       });
     }
   };
-  // useEffect(() => {
-  //   const token = localStorage.getItem("token");
-  //   if (token ) {
-  //     navigate("/");
-  //   }
-  // }, [navigate]);
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token ) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
   const handleResponse = (responseData) => {
     const { token, user } = responseData;
@@ -643,15 +643,15 @@ const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
-      // Check if the response is OK (status 200-299)
+      
       if (response.ok) {
         const contentType = response.headers.get("Content-Type");
         
         if (contentType.includes("application/json")) {
           const data = await response.json();
-          handleResponse(data); // Call the response handler to handle the successful login
+          handleResponse(data); 
         } else {
-          const errorText = await response.text(); // Handle non-JSON responses (e.g., plain text)
+          const errorText = await response.text(); 
           setErrorMessage(errorText || "Unexpected error occurred");
           notify("Unexpected error occurred", "error");
         }
@@ -785,7 +785,7 @@ const Login = () => {
 
         {/* Form Section */}
         <div style={formStyle}>
-          <h2 style={titleStyle}>Tech Titans</h2>
+          <h2 style={titleStyle}>Tech Titans Book Inventory</h2>
           <form onSubmit={handleSubmit}>
             {/* Email Input */}
             <div className="mb-3">
