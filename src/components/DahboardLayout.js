@@ -390,10 +390,14 @@ import AddBook from './AddBook';
 import AddAuthor from './AddAuthor';
 import Logout from './Logout';
 import Book from './Book';
+import UserProfile from './UserProfile';
+import { useNavigate } from 'react-router-dom';
+
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const DashboardLayout = () => {
+  const navigate = useNavigate(); // Initialize useNavigate hook
   const [selectedMenu, setSelectedMenu] = useState('home');
   const [dashboardData, setDashboardData] = useState({
     totalBooks: 0,
@@ -408,6 +412,12 @@ const DashboardLayout = () => {
       .then((data) => setDashboardData(data))
       .catch((error) => console.error('Error fetching dashboard data:', error));
   }, []);
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token ) {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleMenuClick = (menu) => setSelectedMenu(menu);
 
@@ -542,6 +552,21 @@ const DashboardLayout = () => {
           >
             Genres
           </Button>
+
+          <Button
+            startIcon={<AddBoxIcon />}
+            sx={{
+              justifyContent: 'flex-start',
+              width: '100%',
+              marginBottom: '10px',
+              color: '#ECF0F1',
+              textTransform: 'none',
+            }}
+            onClick={() => handleMenuClick('userprofile')}
+          >
+            UserProfile
+          </Button>
+
           <Button
             startIcon={<LogoutIcon />}
             sx={{
@@ -627,6 +652,7 @@ const DashboardLayout = () => {
         {selectedMenu === 'authors' && <AddAuthor />}
         {selectedMenu === 'genres' && <AddBook />}
         {selectedMenu === 'logout' && <Logout />}
+        {selectedMenu === 'userprofile' && <UserProfile/>}
 
         <Box
           sx={{
@@ -643,7 +669,7 @@ const DashboardLayout = () => {
           <Typography variant="body2">
             ❤️ 2025 Tech Titan's Inventory. All Rights Reserved.{' '}
             <Typography component="span" sx={{ color: '#FF6347', fontWeight: 'bold' }}>
-              Powered by Tech Titan
+              Powered by Samiksha Paidlewar
             </Typography>
           </Typography>
         </Box>

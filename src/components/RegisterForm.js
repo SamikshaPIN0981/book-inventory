@@ -39,7 +39,7 @@ const RegisterForm = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        setErrorMessage(errorData.message || 'Error during registration');
+        //setErrorMessage(errorData.message || 'Error during registration');
         notify(errorData.message || 'Error during registration.', 'error');
         return;
       }

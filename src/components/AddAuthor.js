@@ -777,6 +777,10 @@
 
 import React, { useState, useEffect } from "react";
 import { jwtDecode } from 'jwt-decode';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+
 import {
   Box,
   Button,
@@ -796,6 +800,7 @@ import {
   TablePagination,
   Input
 } from "@mui/material";
+
 
 const AuthorSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -867,51 +872,114 @@ const AuthorSection = () => {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setNewAuthor({ ...newAuthor, [name]: value });
+    setNewAuthor({ ...newAuthor, [name]: value.trim() });
   };
 
+  // const handleSaveAuthor = async () => {
+  //   if ( !newAuthor.authorName.trim()) {
+  //     alert("Please provide an author name!");
+  //     return;
+  //   }
+  //   try {
+  //     let response;
+  //     if (editingAuthor) {
+  //       response = await fetch(
+  //         `http://localhost:8080/api/authors/${editingAuthor.authorId}`,
+  //         {
+  //           method: "PUT",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //           body: JSON.stringify(newAuthor),
+  //         }
+  //       );
+  //     } else {
+  //       response = await fetch("http://localhost:8080/api/authors", {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify(newAuthor),
+  //       });
+  //     }
+
+  //     if (response.ok) {
+  //       fetchAuthors();
+  //       setShowAddForm(false);
+  //       setNewAuthor({ authorId: "", authorName: "", biography: "" });
+  //       setEditingAuthor(null);
+  //     } else {
+  //       console.error("Failed to save author");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving author:", error);
+  //   }
+  // };
+ 
+
   const handleSaveAuthor = async () => {
-    if (!newAuthor.authorName || !newAuthor.authorName.trim()) {
-      alert("Please provide an author name!");
-      return;
-    }
-    try {
-      let response;
-      if (editingAuthor) {
-        response = await fetch(
-          `http://localhost:8080/api/authors/${editingAuthor.authorId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(newAuthor),
-          }
-        );
-      } else {
-        response = await fetch("http://localhost:8080/api/authors", {
-          method: "POST",
+  const trimmedName = newAuthor.authorName.trim(); // Trim spaces from input
+  
+  if (!trimmedName) {
+    toast.warning("Author name cannot be empty or just spaces!", { position: "top-right" });
+    return;
+  }
+
+  try {
+    let response;
+    if (editingAuthor) {
+      // If editing an existing author
+      response = await fetch(
+        `http://localhost:8080/api/authors/${editingAuthor.authorId}`,
+        {
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(newAuthor),
-        });
+          body: JSON.stringify({ ...newAuthor, authorName: trimmedName }), // Use trimmed name
+        }
+      );
+      
+      if (response.ok) {
+        toast.success("Author updated successfully!", { position: "top-right" }); // Success message for update
       }
 
+    } else {
+      // If adding a new author
+      response = await fetch("http://localhost:8080/api/authors", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...newAuthor, authorName: trimmedName }), // Use trimmed name
+      });
+
       if (response.ok) {
-        fetchAuthors();
-        setShowAddForm(false);
-        setNewAuthor({ authorId: "", authorName: "", biography: "" });
-        setEditingAuthor(null);
-      } else {
-        console.error("Failed to save author");
+        toast.success("Author added successfully!", { position: "top-right" }); // Success message for new author
       }
-    } catch (error) {
-      console.error("Error saving author:", error);
     }
-  };
+
+    if (response.ok) {
+      fetchAuthors();
+      setShowAddForm(false);
+      setNewAuthor({ authorId: "", authorName: "", biography: "" });
+      setEditingAuthor(null);
+    } else if (response.status === 409) { // Duplicate author
+      const errorMessage = await response.text();
+      toast.error(errorMessage, { position: "top-right" });
+    } else {
+      toast.error("Failed to save author", { position: "top-right" });
+    }
+  } catch (error) {
+    toast.error("Error saving author!", { position: "top-right" });
+    console.error("Error saving author:", error);
+  }
+};
+
 
   const handleDeleteAuthor = async () => {
     if (authorToDelete) {
@@ -996,12 +1064,15 @@ const AuthorSection = () => {
 
       if (response.ok) {
         fetchAuthors();
-        alert("Bulk upload successful!");
+        // alert("Bulk upload successful!");
+        toast.success("CSV file uploaded successfully!", { position: "top-right" });
       } else {
-        console.error("Failed to upload CSV.");
+        // console.error("Failed to upload CSV.");
+        toast.error("Failed to upload CSV.", { position: "top-right" });
       }
     } catch (error) {
-      console.error("Error uploading CSV:", error);
+      toast.error("Error uploading CSV:", { position: "top-right" });
+      // console.error("Error uploading CSV:", error);
     }
   };
 
@@ -1128,6 +1199,7 @@ const AuthorSection = () => {
               name="authorName"
               value={newAuthor.authorName}
               onChange={handleInputChange}
+             
               fullWidth
               sx={{
                 backgroundColor: "#FFFFFF",
@@ -1190,7 +1262,7 @@ const AuthorSection = () => {
                       onClick={() => handleEditAuthor(author)}
                       sx={{
                         backgroundColor: "#003366",
-                        "&:hover": { backgroundColor: "#feb47b" },
+                        "&:hover": { backgroundColor: "#FF4500" },
                         color: "white",
                       }}
                     >
@@ -1199,8 +1271,8 @@ const AuthorSection = () => {
                     <Button
                       onClick={() => openDeleteDialogBox(author)}
                       sx={{
-                        backgroundColor: "#FF5A5F",
-                        "&:hover": { backgroundColor: "#FF3C3F" },
+                        backgroundColor: "#c62828",
+                        "&:hover": { backgroundColor: "#FF4500" },
                         color: "white",
                         marginLeft: "10px",
                       }}
@@ -1237,10 +1309,10 @@ const AuthorSection = () => {
           <Button
             onClick={handleDeleteAuthor}
             color="secondary"
-            sx={{
-              backgroundColor: "#FF5A5F",
-              "&:hover": { backgroundColor: "#FF3C3F" },
-            }}
+            // sx={{
+            //   backgroundColor: "#FF5A5F",
+            //   "&:hover": { backgroundColor: "#FF3C3F" },
+            // }}
           >
             Confirm
           </Button>
